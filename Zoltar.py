@@ -82,11 +82,13 @@ def on_double_click(event):
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -- Local Functions  -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#save the local workspace to a JSON file
 def save_workspace(filename="Zoltar.json"):
     persist(notebook)
     with open(filename, 'w') as f:
         json.dump(zoltar_data, f, indent=4)
 
+#load the local workspace from a JSON file
 def load_workspace(filename="Zoltar.json", zdata=dict):
     if os.path.isfile(filename):
         #load dict from JSON file
@@ -108,10 +110,31 @@ def load_workspace(filename="Zoltar.json", zdata=dict):
             tree_nodes[tab_label] = treeview.insert('Notes', 'end', text=tab_label)
             Add_Tab(notebook=notebook,label=tab_label, text_data=notes[tab_label])
 
+#display treeview popup menu
+def do_treeview_popup(event):
+    popup.tk_popup(event.x_root, event.y_root, 0)
+
+#remove selected tab and treeview node
+def delete_tab_and_data():
+    selected_item_id = treeview.selection()[0]  # get selected item's ID
+    selected_item = treeview.item(selected_item_id)  # get selected item's values
+    node_label = selected_item['text']
+    if node_label not in treview_node_parents: #checks to make sure we are not trying to delete any parent nodes! NO!NO!NO!NO!
+        delete_node = messagebox.askyesno('DELETE FOREVER', 'Delete tab and data for - "'+node_label+'" ?')
+        if delete_node:
+            selected_item_id = treeview.selection()[0]
+            for i in range(notebook.index('end')):
+                if notebook.tab(i, 'text') == node_label:
+                    del(zoltar_data['Notes'][node_label]) #remove data
+                    notebook.forget(i) #remove tab
+                    treeview.delete(selected_item_id) #remove treeview node
+                    return
+
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -- Object Initializations -----------------------------------------------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 tree_nodes = {} # stores the treeview nodes 
+treview_node_parents = ["Notes"]
 
 my_theme = 'equilux'
 
@@ -160,6 +183,13 @@ paned_window.paneconfigure(left_panel, minsize=350)
 treeview = ttk.Treeview(left_panel)
 treeview.pack(fill=tk.BOTH, expand=1)
 treeview.bind("<Double-1>", on_double_click)
+
+#Add popup menu to treeview
+popup = tk.Menu(root, tearoff=0)
+popup.add_command(label="Delete", command=lambda: delete_tab_and_data())
+popup.add_command(label="Edit Name", command=lambda: print("Edit"))
+treeview.bind("<Button-3>", do_treeview_popup)
+treeview.pack()
 
 # Create the right panel
 right_panel = tk.Frame(paned_window)
